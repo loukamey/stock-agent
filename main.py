@@ -96,7 +96,7 @@ def hourly_check():
     urgent = check_urgent(stocks)
     if urgent:
         reason = urgent[0]
-        alert = f"🚨🔴🚨🔴🚨🔴🚨🔴🚨\n\n<b>LOUKA — ACT NOW</b>\n\n{reason}\n\n→ Check your broker app immediately\n\n⏰ {datetime.now().strftime('%H:%M')} Dubai time"
+        alert = f"🚨‼️\n\n<b>LOUKA — ACT NOW</b>\n\n{reason}\n\n→ Check your broker app immediately\n\n⏰ {datetime.now().strftime('%H:%M')} Dubai time"
         send_telegram(alert)
         print("URGENT STOCK ALERT SENT")
 
