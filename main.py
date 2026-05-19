@@ -11,7 +11,7 @@ ALPHA_VANTAGE_KEY = "DCJ6C7AGRNGWMXQO"
 TELEGRAM_TOKEN = "8370691561:AAGt5T8XrIRKZOBeI322Jiugk9jw_SKOEjk"
 TELEGRAM_CHAT_ID = "8526660731"
 
-WATCHLIST = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL", "META", "ADBE", "AMD"]
+WATCHLIST = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL", "META", "AMD"]
 
 def send_telegram(message):
     try:
@@ -47,22 +47,34 @@ def get_stock_data():
 
 def generate_report(stocks):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    prompt = f"""You are Louka's personal stock market advisor. Louka is 13 years old, lives in Dubai, and has 9,000 AED to invest. His parents are helping him invest small amounts across different stocks.
+    prompt = f"""You are Louka's personal stock market advisor. Louka is 13, lives in Dubai, has 9,000 AED total. He should only put MAX 2,000 AED into stocks — small amounts spread across picks. Parents are involved in actual buying.
 
 Today: {datetime.now().strftime("%B %d, %Y")}
+Stock data: {json.dumps(stocks, indent=2)}
 
-STOCK DATA:
-{json.dumps(stocks, indent=2)}
+Write his daily brief in this EXACT bullet point format — personal, direct, like texting a friend:
 
-Talk to Louka directly and personally like a smart older friend who knows markets. Use his name. Be specific and actionable. Cover:
+Hey Louka 👋 Here's your brief for today:
 
-1. "Louka, today I'd focus on..." — your top pick today with exact price and why
-2. "Put X AED into Y because..." — specific amounts from his 9K budget
-3. "Stay away from X today because..." — what to avoid and why
-4. "Quick warning..." — one risk to watch
-5. "Tomorrow look out for..." — what to watch next
+🎯 TOP PICK TODAY
+- [Stock] at $[price] — [2-3 sentences why, be specific]
+- Suggested amount: [X] AED
 
-Be conversational, direct, and confident. No generic advice. Talk like you're texting him personally. Keep under 3500 characters."""
+💰 YOUR MOVES TODAY
+- [X] AED → [Stock] — [one line reason]
+- [X] AED → [Stock] — [one line reason]  
+- Keep the rest as cash
+
+🚫 AVOID TODAY
+- [Stock] — [one line reason why not today]
+
+⚠️ WATCH OUT
+- [One specific risk or event today]
+
+👀 TOMORROW
+- [One thing to watch for tomorrow]
+
+Total suggested investment today: MAX 300-500 AED. Never put everything in one stock. Keep it tight and specific."""
 
     message = client.messages.create(
         model="claude-opus-4-5",
@@ -81,7 +93,7 @@ def daily_job():
 
 print("Stock Intelligence Agent is running!")
 print(f"Started at: {datetime.now()}")
-print("Sending personalized report now...")
+print("Sending report now...")
 daily_job()
 
 schedule.every().day.at("05:00").do(daily_job)
