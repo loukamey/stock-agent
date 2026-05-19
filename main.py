@@ -11,7 +11,7 @@ ALPHA_VANTAGE_KEY = "DCJ6C7AGRNGWMXQO"
 TELEGRAM_TOKEN = "8370691561:AAGt5T8XrIRKZOBeI322Jiugk9jw_SKOEjk"
 TELEGRAM_CHAT_ID = "8526660731"
 
-WATCHLIST = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL", "META"]
+WATCHLIST = ["AAPL", "NVDA", "MSFT", "TSLA", "AMZN", "GOOGL", "META", "ADBE", "AMD"]
 
 def send_telegram(message):
     try:
@@ -47,19 +47,22 @@ def get_stock_data():
 
 def generate_report(stocks):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    prompt = f"""You are a professional stock market analyst.
+    prompt = f"""You are Louka's personal stock market advisor. Louka is 13 years old, lives in Dubai, and has 9,000 AED to invest. His parents are helping him invest small amounts across different stocks.
+
 Today: {datetime.now().strftime("%B %d, %Y")}
 
 STOCK DATA:
 {json.dumps(stocks, indent=2)}
 
-Write a sharp daily stock briefing for a young investor with small budget covering:
-- Best and worst performers today
-- Top 3 investment suggestions under 500 AED each
-- One stock pick of the day with clear reasoning
-- Any risks to watch
+Talk to Louka directly and personally like a smart older friend who knows markets. Use his name. Be specific and actionable. Cover:
 
-Keep it under 3500 characters for Telegram. Be specific with prices."""
+1. "Louka, today I'd focus on..." — your top pick today with exact price and why
+2. "Put X AED into Y because..." — specific amounts from his 9K budget
+3. "Stay away from X today because..." — what to avoid and why
+4. "Quick warning..." — one risk to watch
+5. "Tomorrow look out for..." — what to watch next
+
+Be conversational, direct, and confident. No generic advice. Talk like you're texting him personally. Keep under 3500 characters."""
 
     message = client.messages.create(
         model="claude-opus-4-5",
@@ -73,12 +76,12 @@ def daily_job():
     stocks = get_stock_data()
     print(f"Got {len(stocks)} stocks")
     report = generate_report(stocks)
-    message = f"📈 <b>Daily Stock Report - {datetime.now().strftime('%B %d, %Y')}</b>\n\n{report}"
+    message = f"📈 <b>Your Daily Stock Brief - {datetime.now().strftime('%B %d, %Y')}</b>\n\n{report}"
     send_telegram(message)
 
 print("Stock Intelligence Agent is running!")
 print(f"Started at: {datetime.now()}")
-print("Sending test report now...")
+print("Sending personalized report now...")
 daily_job()
 
 schedule.every().day.at("05:00").do(daily_job)
