@@ -34,10 +34,12 @@ def get_stock_data():
             data = response.json()
             quote = data.get("Global Quote", {})
             if quote:
+                change = quote.get("10. change percent", "0%").replace("%", "")
                 stocks.append({
                     "symbol": symbol,
                     "price": quote.get("05. price", "N/A"),
                     "change": quote.get("10. change percent", "N/A"),
+                    "change_float": float(change) if change else 0,
                     "high": quote.get("03. high", "N/A"),
                     "low": quote.get("04. low", "N/A"),
                 })
@@ -45,36 +47,45 @@ def get_stock_data():
             print(f"Error fetching {symbol}: {e}")
     return stocks
 
+def check_urgent(stocks):
+    urgent = []
+    for stock in stocks:
+        change = abs(stock.get("change_float", 0))
+        if change >= 5:
+            direction = "📈 SURGED" if stock["change_float"] > 0 else "📉 CRASHED"
+            urgent.append(f"{stock['symbol']} {direction} {stock['change']} to ${stock['price']}")
+    return urgent
+
 def generate_report(stocks):
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    prompt = f"""You are Louka's personal stock market advisor. Louka is 13, lives in Dubai, has 9,000 AED total. He should only put MAX 2,000 AED into stocks — small amounts spread across picks. Parents are involved in actual buying.
+    prompt = f"""You are Louka's personal stock market advisor. Louka is 13, lives in Dubai, has 9,000 AED total. MAX 2,000 AED into stocks. Parents help with buying.
 
 Today: {datetime.now().strftime("%B %d, %Y")}
 Stock data: {json.dumps(stocks, indent=2)}
 
-Write his daily brief in this EXACT bullet point format — personal, direct, like texting a friend:
+Write his daily brief in this EXACT bullet point format:
 
 Hey Louka 👋 Here's your brief for today:
 
 🎯 TOP PICK TODAY
-- [Stock] at $[price] — [2-3 sentences why, be specific]
+- [Stock] at $[price] — [2-3 sentences why]
 - Suggested amount: [X] AED
 
 💰 YOUR MOVES TODAY
 - [X] AED → [Stock] — [one line reason]
-- [X] AED → [Stock] — [one line reason]  
+- [X] AED → [Stock] — [one line reason]
 - Keep the rest as cash
 
 🚫 AVOID TODAY
-- [Stock] — [one line reason why not today]
+- [Stock] — [one line reason]
 
 ⚠️ WATCH OUT
-- [One specific risk or event today]
+- [One specific risk today]
 
 👀 TOMORROW
-- [One thing to watch for tomorrow]
+- [One thing to watch]
 
-Total suggested investment today: MAX 300-500 AED. Never put everything in one stock. Keep it tight and specific."""
+Total suggested today: MAX 300-500 AED."""
 
     message = client.messages.create(
         model="claude-opus-4-5",
@@ -82,6 +93,18 @@ Total suggested investment today: MAX 300-500 AED. Never put everything in one s
         messages=[{"role": "user", "content": prompt}]
     )
     return message.content[0].text
+
+def hourly_check():
+    print(f"Hourly stock check - {datetime.now()}")
+    stocks = get_stock_data()
+    urgent = check_urgent(stocks)
+    if urgent:
+        alert = "🚨🚨🚨 <b>URGENT STOCK ALERT</b> 🚨🚨🚨\n\nLouka, big market move happening NOW!\n\n"
+        for u in urgent:
+            alert += f"⚡ {u}\n"
+        alert += f"\nThis could be a buying or selling opportunity!\nShow your parents immediately!\n\n⏰ {datetime.now().strftime('%H:%M Dubai time')}"
+        send_telegram(alert)
+        print(f"URGENT ALERT SENT")
 
 def daily_job():
     print(f"Running stock scan - {datetime.now()}")
@@ -93,10 +116,10 @@ def daily_job():
 
 print("Stock Intelligence Agent is running!")
 print(f"Started at: {datetime.now()}")
-print("Sending report now...")
 daily_job()
 
 schedule.every().day.at("05:00").do(daily_job)
+schedule.every(1).hours.do(hourly_check)
 
 while True:
     schedule.run_pending()
